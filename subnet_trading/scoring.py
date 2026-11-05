@@ -64,15 +64,22 @@ class Account:
 class Leaderboard:
     """Reference for the validator: every miner's account, round after round.
 
-    Before each deadline, `submit` records a miner's latest valid weights. At the end of
-    the round, `run_round` trades the new weights at the start of the holding period, then
-    applies the round's returns (from the trade to the end of the round). A miner who sent
-    nothing keeps its previous weights and pays no fee.
+    At the first scored deadline, `register` gives every registered miner an account of
+    1,000 TAO; a miner that joins later gets one at its first submission. Before each
+    deadline, `submit` records a miner's latest valid weights. At the end of the round,
+    `run_round` trades the new weights at the start of the holding period, then applies
+    the round's returns (from the trade to the end of the round). A miner who sent nothing
+    keeps its previous weights and pays no fee. After each round, `weights` gives the
+    weights the validator sets on chain.
     """
 
     def __init__(self):
         self.accounts = {}
         self.pending = {}
+
+    def register(self, miners):
+        for miner in miners:
+            self.accounts.setdefault(miner, Account())
 
     def submit(self, miner, weights, universe):
         from .weights import check_weights
@@ -87,5 +94,17 @@ class Leaderboard:
             account.hold(returns, market)
 
     def standings(self):
+        """The ranking: account values after the last settled round, highest first."""
         table = pd.Series({m: a.value for m, a in self.accounts.items()}, name="value")
         return table.sort_values(ascending=False)
+
+    def weights(self):
+        """On-chain weights: each miner's gain above START_BALANCE, as a share of all such
+        gains. If no miner is above START_BALANCE, every miner gets the same weight."""
+        if not self.accounts:
+            return {}
+        gains = {m: max(0.0, a.value - config.START_BALANCE) for m, a in self.accounts.items()}
+        total = sum(gains.values())
+        if total == 0:
+            return {m: 1 / len(gains) for m in gains}
+        return {m: g / total for m, g in gains.items()}

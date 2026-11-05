@@ -64,6 +64,18 @@ choose `{1: 0.5, 2: 0.25}`: a quarter of your TAO stays aside.
 Your account goes from 1,000 to 1,097.94 TAO, and the next round starts from there.
 The same numbers are checked in `tests/test_scoring.py`.
 
+## Ranking
+
+- Every miner starts with 1,000 TAO at the first scored deadline. A miner that joins
+  later starts with 1,000 TAO at its first deadline.
+- At any moment, miners are ranked by their account value after the last settled
+  round.
+- After each settled round, the validator sets each miner's on-chain weight to its
+  gain above 1,000 TAO, as a share of all miners' gains above 1,000. A miner at or
+  below 1,000 gets 0. If nobody is above 1,000, every miner gets the same weight.
+- The prizes follow the ranking at the last deadline of the event. Miners with exactly
+  the same value share their place.
+
 ## How the two numbers were set
 
 Both were measured on the February 2026 history, with `scripts/calibrate.py`.
@@ -90,11 +102,15 @@ is the final authority, and this repository is kept in step with it.
 
 The validator reference is `Leaderboard` in `subnet_trading/scoring.py`:
 
-1. Before each deadline, `submit(miner, weights, universe)` records each miner's latest
+1. At the first scored deadline, `register(miners)` gives every registered miner
+   1,000 TAO.
+2. Before each deadline, `submit(miner, weights, universe)` records each miner's latest
    valid weights. The universe is the 50 largest pools at the deadline.
-2. At t+20, `run_round(returns, universe)` charges the fees and applies the returns
+3. At t+20, `run_round(returns, universe)` charges the fees and applies the returns
    from t+5 to t+20.
-3. `standings()` gives the ranking.
+4. `standings()` gives the ranking, and `weights()` the weights to set on chain.
 
 The validator needs the price of every subnet at t+5 and t+20, and the TAO in every
-pool at t.
+pool at t. Bittensor limits how often a validator can set weights: on the testnet
+subnet, allow it every 75 blocks (15 minutes) to set them after every round, or set
+them every other round.

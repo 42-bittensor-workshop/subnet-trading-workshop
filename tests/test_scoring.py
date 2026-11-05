@@ -67,6 +67,31 @@ def test_miner_without_new_weights_keeps_them_and_pays_nothing():
     assert board.accounts["alice"].weights == {1: 1.0}
 
 
+def test_on_chain_weights_follow_gains_above_the_start():
+    board = Leaderboard()
+    board.register(["alice", "bob", "carol"])
+    board.accounts["alice"].value, board.accounts["bob"].value, board.accounts["carol"].value = 1300, 1100, 900
+    assert board.weights() == pytest.approx({"alice": 0.75, "bob": 0.25, "carol": 0.0})
+    assert list(board.standings().index) == ["alice", "bob", "carol"]
+
+
+def test_on_chain_weights_are_equal_when_nobody_gains():
+    board = Leaderboard()
+    board.register(["alice", "bob"])
+    board.accounts["alice"].value = 950
+    assert board.weights() == {"alice": 0.5, "bob": 0.5}
+    assert Leaderboard().weights() == {}
+
+
+def test_a_late_miner_starts_at_the_starting_balance():
+    board = Leaderboard()
+    board.register(["alice"])
+    board.submit("alice", {1: 1.0}, universe=[1, 2])
+    board.run_round({1: 0.01, 2: 0.0}, universe=[1, 2])
+    board.submit("bob", {1: 1.0}, universe=[1, 2])
+    assert board.accounts["bob"].value == config.START_BALANCE
+
+
 def test_invalid_submission_is_refused():
     with pytest.raises(WeightsError):
         Leaderboard().submit("bob", {1: -0.5}, universe=[1, 2])
