@@ -31,22 +31,45 @@ subnet. The next round, you play with your new balance.
 
 All the rules, with the exact timing: [docs/RULES.md](docs/RULES.md).
 
-## Why the rules look like this
+## Why the game works this way
 
-- **Compared with the average subnet.** When every subnet rises or falls together,
-  nobody chose that. Comparing with the average measures only your choices, and doing
-  nothing earns nothing.
-- **Times 20.** In 15 minutes, prices move by tiny amounts, often a few hundredths of
-  a percent. Multiplying by 20, like leverage, makes good and bad choices show: a
-  typical round moves an account by about 1%.
-- **A fee on every trade.** Real trading always costs something. The fee rewards
-  changing your weights when you have a reason, not all the time. At 0.25%, trading at
-  random loses about as much as a simple signal gains.
-- **A 5-minute pause.** Your weights are locked before the prices that score them
-  start to count, so nobody can react after seeing the move.
-- **Only the 50 largest subnets.** They trade the most, and small pools are easy to
-  push around.
-- **Virtual TAO.** Nobody risks real money.
+This is a very simplified version of intraday trading. Real traders work around the
+clock, with real money and real costs. Here you have two or three hours, a handful of
+rounds and nothing at risk. So we kept the spirit of trading and chose rules that make
+sure something actually happens on the screen.
+
+Subnet prices barely move in 15 minutes, often by a few hundredths of a percent. On
+their own, those moves would hardly change your account, so we multiply them by 20, a
+bit like trading with leverage. A good round shows, and so does a bad one.
+
+We also compare you with the average subnet instead of counting your raw gains. When
+the whole market goes up or down, that's not your doing, and it would decide the
+ranking more than your choices would. Measured against the average, only your choices
+count: if you hold the market, you neither win nor lose.
+
+Trading is never free, so every trade costs a small fee. It is set so that shuffling
+your picks at random every 15 minutes loses money, while a sensible strategy can still
+come out ahead. The 5-minute pause between the deadline and the trade locks your
+weights before the prices that count start to move. And we stick to the 50 largest
+subnets, which trade the most and are hard to push around.
+
+Real trading has more to it: large orders that move prices, risk limits, the stress
+of real money. We left that out on purpose. The point is to give you a feel for what
+it's like to look for a signal, test it, and see whether it holds up live.
+
+## Three tools
+
+You will use three things during the workshop, and the same strategy works in all of
+them:
+
+1. **The notebook** (`notebooks/start_here.ipynb`) is your lab. You try ideas on past
+   data, test them with the game's rules and look at the results. This is where you
+   learn what makes a strategy better, and what to watch out for.
+2. **The practice game** (`scripts/practice.py`) is the real competition, just for you.
+   It reads live subnet prices from the chain, takes your weights every 15 minutes,
+   trades 5 minutes later, and shows how you're doing on a dashboard in your browser.
+3. **Your miner** is what you run during the event. It sends your weights to the
+   validator.
 
 ## Get started
 
@@ -63,10 +86,11 @@ pip install -e ".[dev]" notebook
 jupyter notebook notebooks/start_here.ipynb
 ```
 
-The notebook takes about 30 minutes. It walks you from a hand-picked portfolio to a
-signal you can test, and shows how fees and luck change the result.
+## 1. Research in the notebook
 
-## Your strategy in three lines
+The notebook takes about 30 minutes. It walks you from a hand-picked portfolio to a
+signal you can test, and shows how fees and luck change the result. The core of it
+fits in three lines:
 
 ```python
 from subnet_trading import *
@@ -81,7 +105,29 @@ A strategy can be:
 - **fixed weights** that you choose, like `{64: 0.5, 4: 0.5}`;
 - **your own function** that receives the market and returns weights.
 
-## Your miner
+## 2. Practise live
+
+```bash
+python scripts/practice.py strategies/example_strategy.py
+```
+
+It loads the last 24 hours of prices from the chain (about 2 minutes) and opens the
+dashboard in your browser. Then it plays round after round: it takes your weights at
+:00, :15, :30 and :45 UTC, trades 5 minutes later, and shows your account next to a
+simple strategy and the market. Stop it with Ctrl+C.
+
+Your strategy goes in a small Python file with one function, `strategy(market)`;
+`strategies/example_strategy.py` is a starting point. To pick by hand instead, edit
+`strategies/my_weights.json` whenever you like and run:
+
+```bash
+python scripts/practice.py --weights strategies/my_weights.json
+```
+
+The file is read again at every deadline. Holder counts aren't available live yet:
+they come from TaoSwap, not from the chain.
+
+## 3. The event: your miner
 
 Your miner sends one thing every 15 minutes: a dict of subnet ids and weights. During
 the event you start it with your strategy:

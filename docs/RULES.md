@@ -80,7 +80,8 @@ The reference strategy buys the 10 subnets that rose most over the last hour:
 
 The provided history has one snapshot every 15 minutes, so in backtests the 5-minute
 pause is rounded up to 15 minutes: weights decided at a snapshot are traded at the
-next one. Live, the pause is exactly 5 minutes.
+next one. In the practice game (`scripts/practice.py`) and at the event, the pause is
+exactly 5 minutes.
 
 ## For organisers
 

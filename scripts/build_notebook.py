@@ -123,7 +123,13 @@ Your miner runs your strategy every 15 minutes and sends the result. This is exa
 next_weights(my_strategy, market)"""),
     md("""During the event, you start your miner with `run(my_strategy, get_market, send)`. The organisers give you `get_market` (the live market) and `send` (delivery to the validator). Your strategy can be a signal like this one, your own function, or fixed weights such as `{64: 0.5, 4: 0.5}`.
 
-**One last thing:** what worked in the past may not work next. Live, you will find out!"""),
+Before the event, try your strategy live with the practice game. Save it in a file with a `strategy(market)` function, like `strategies/example_strategy.py`, then run in a terminal:
+
+```bash
+python scripts/practice.py strategies/example_strategy.py
+```
+
+It plays the real rules on live prices and shows your account on a dashboard. **One last thing:** what worked in the past may not work next. Live, you will find out!"""),
 ]
 
 
