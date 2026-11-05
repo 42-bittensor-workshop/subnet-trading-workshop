@@ -119,7 +119,8 @@ The validator reference is `Leaderboard` in `subnet_trading/scoring.py`:
    from t+5 to t+15. Then the next round's weights are submitted.
 4. `standings()` gives the ranking, and `weights()` the weights to set on chain.
 
-The validator needs the price of every subnet at t+5 and t+15, and the TAO in every
-pool at t. Bittensor limits how often a validator can set weights: on the testnet
-subnet, allow it every 75 blocks (15 minutes) to set them after every round, or set
-them every other round.
+`scripts/validator.py` runs it. It reads every pool on the chain at t, t+5 and t+15
+(and at t+10 for the market it serves to miners), takes the miners' weights over HTTP,
+signed with their hotkeys, and sets the ranking on chain every other round: a subnet
+allows weights once every 100 blocks (20 minutes) and only root can lower that, so
+after every round is not possible. `subnet_trading/validator.py` describes the routes.

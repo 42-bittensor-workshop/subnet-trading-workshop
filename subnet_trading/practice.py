@@ -18,6 +18,7 @@ import pandas as pd
 
 from . import config
 from .backtest import make_weights
+from .live import round_returns
 from .scoring import Account, Leaderboard
 from .signals import change
 from .weights import WeightsError
@@ -126,10 +127,8 @@ class Practice:
 
     def settle(self, t, snap):
         """The round's result: returns from its trade to now, with the event's scoring code."""
-        before, now = self.open["trade"]["pools"], snap["pools"]
-        returns = (now["price"] / before["price"] - 1).where(now["alpha_out"] >= 0.5 * before["alpha_out"])
         start = self.board.accounts[YOU].value
-        self.board.run_round(returns.dropna().to_dict(), self.open["universe"])
+        self.board.run_round(round_returns(self.open["trade"], snap), self.open["universe"])
         self.timeline[-1].update(status="settled", you=self.board.accounts[YOU].value - start)
         self.record(t)
         self.open = None
