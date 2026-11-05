@@ -120,8 +120,9 @@ Your strategy goes in a small Python file with one function, `strategy(market)`;
 python scripts/practice.py --weights strategies/my_weights.json
 ```
 
-The file is read again at every deadline. Holder counts aren't available live yet:
-they come from TaoSwap, not from the chain.
+Both files are read again at every deadline, so you can change your strategy while
+the game runs, and the dashboard lists the 50 subnets you can pick. Holder counts
+aren't available live yet: they come from TaoSwap, not from the chain.
 
 ## 3. The event: your miner
 

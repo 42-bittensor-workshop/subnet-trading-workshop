@@ -37,6 +37,22 @@ def _chart(series, width=720, height=260, pad=44):
     return "".join(parts)
 
 
+def _eligible(practice, weights):
+    table = practice.eligible()
+    if table.empty:
+        return ""
+    rows = []
+    for netuid, row in table.iterrows():
+        moved = f"{100 * row.change_1h:+.2f}%" if row.change_1h == row.change_1h else "-"
+        mine = f"{weights[netuid]:.2f}" if netuid in weights else ""
+        rows.append(f'<tr><td>{netuid}</td><td class="num">{row.price:.5f}</td>'
+                    f'<td class="num">{row.tao_in:,.0f}</td><td class="num">{moved}</td>'
+                    f'<td class="num">{mine}</td></tr>')
+    return ('<details open><summary><b>The 50 subnets you can pick right now</b></summary><table>'
+            '<tr class="muted"><td>netuid</td><td class="num">price (TAO)</td><td class="num">TAO in pool</td>'
+            '<td class="num">last hour</td><td class="num">your weight</td></tr>' + "".join(rows) + "</table></details>")
+
+
 def write(path, practice, next_event):
     latest = {name: (values[-1][1] if values else config.START_BALANCE) for name, values in practice.values.items()}
     rows = "".join(
@@ -63,6 +79,7 @@ td {{ padding:6px 4px; border-bottom:1px solid var(--grid); }} .num {{ text-alig
 <table>{rows}</table>
 {_chart(practice.values)}
 <p><b>Your latest weights:</b> {html.escape(picks)}</p>
+{_eligible(practice, weights)}
 <p class="muted">Rounds settled: {len(practice.rounds)}. Updated {datetime.now(timezone.utc):%H:%M:%S} UTC.</p>
 <script>const t = "{target}"; if (t) {{ const s = Math.max(0, Math.round((new Date(t) - new Date()) / 1000));
 document.getElementById("left").textContent = "(in " + Math.floor(s / 60) + " min " + (s % 60) + " s)"; }}</script>

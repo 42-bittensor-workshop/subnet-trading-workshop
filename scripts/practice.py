@@ -3,9 +3,10 @@
     python scripts/practice.py strategies/example_strategy.py       your strategy file
     python scripts/practice.py --weights strategies/my_weights.json  hand-picked weights
 
-A strategy file defines `strategy(market)`, as in the notebook. With --weights, edit the
-JSON file whenever you like: it is read again at every deadline (:00, :15, :30, :45 UTC).
-A dashboard opens in your browser. Stop with Ctrl+C.
+A strategy file defines `strategy(market)`, as in the notebook. Both files are read again
+at every deadline (:00, :15, :30, :45 UTC), so you can edit them while the game runs:
+changes apply from the next round. A dashboard opens in your browser, with the 50
+subnets you can pick. Stop with Ctrl+C.
 
 Options:
     --rounds N           stop after N deadlines (default: run until stopped)
@@ -21,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from subnet_trading.live import ARCHIVE_URL, Chain, History, backfill  # noqa: E402
-from subnet_trading.practice import Practice, from_file  # noqa: E402
+from subnet_trading.practice import Practice, from_file, from_python_file  # noqa: E402
 
 
 def main():
@@ -36,7 +37,12 @@ def main():
     if bool(args.strategy_file) == bool(args.weights):
         parser.error("give either a strategy file or --weights")
 
-    strategy = from_file(args.weights) if args.weights else runpy.run_path(args.strategy_file)["strategy"]
+    if args.weights:
+        strategy = from_file(args.weights)
+    else:
+        if "strategy" not in runpy.run_path(args.strategy_file):  # fail now rather than at the first deadline
+            parser.error(f"{args.strategy_file} must define a function strategy(market)")
+        strategy = from_python_file(args.strategy_file)
     chain, history = Chain(args.url), History()
     print(f"Loading the last {args.history_hours:g} hours of subnet prices from the chain...")
     for snapshot in backfill(chain, args.history_hours):

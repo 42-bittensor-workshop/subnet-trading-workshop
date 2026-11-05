@@ -4,7 +4,7 @@ import pytest
 
 from subnet_trading import config
 from subnet_trading.live import History, snapshot_from_rows
-from subnet_trading.practice import SIMPLE, YOU, Practice, from_file, next_deadline
+from subnet_trading.practice import SIMPLE, YOU, Practice, from_file, from_python_file, next_deadline
 from subnet_trading.scoring import Account, market_return
 
 START = datetime(2026, 11, 20, 10, 1, tzinfo=timezone.utc)
@@ -121,3 +121,32 @@ def test_dashboard_is_written(tmp_path):
     practice.play(rounds=1)
     page = practice.dashboard.read_text()
     assert "Practice game" in page and "simple strategy" in page and "TAO" in page
+
+
+def test_strategy_file_is_read_again_at_each_deadline(tmp_path):
+    path = tmp_path / "mine.py"
+    path.write_text("def strategy(market):\n    return {1: 1.0}\n")
+    strategy = from_python_file(path)
+    assert strategy(None) == {1: 1.0}
+    path.write_text("def strategy(market):\n    return {2: 1.0}\n")
+    assert strategy(None) == {2: 1.0}
+
+
+def test_a_broken_strategy_file_is_reported_and_the_game_goes_on(tmp_path):
+    path = tmp_path / "broken.py"
+    path.write_text("def strategy(market):\n    return {1: 1.0\n")   # syntax error
+    logs = []
+    practice, _ = session(from_python_file(path), logs)
+    practice.play(rounds=1)
+    assert any("your strategy failed" in line for line in logs)
+    assert practice.board.accounts[YOU].value == config.START_BALANCE
+
+
+def test_dashboard_lists_the_subnets_you_can_pick(tmp_path):
+    practice, _ = session(lambda market: {1: 1.0})
+    practice.dashboard = tmp_path / "practice.html"
+    practice.play(rounds=1)
+    page = practice.dashboard.read_text()
+    assert "The 50 subnets you can pick" in page
+    assert page.split("The 50 subnets you can pick")[1].count("<tr><td>") == 50
+    assert len(practice.eligible()) == 50

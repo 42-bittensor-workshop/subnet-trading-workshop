@@ -9,6 +9,7 @@ Start it with scripts/practice.py.
 """
 
 import json
+import runpy
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ from . import config
 from .backtest import make_weights
 from .scoring import Account, Leaderboard
 from .signals import change
+from .weights import WeightsError
 
 YOU, SIMPLE, MARKET = "you", "simple strategy", "market"
 
@@ -35,6 +37,20 @@ def from_file(path):
 
     def strategy(market):
         return {int(k): float(v) for k, v in json.loads(path.read_text()).items()}
+
+    return strategy
+
+
+def from_python_file(path):
+    """A strategy file defining strategy(market), loaded again at every deadline:
+    edits apply from the next round."""
+    path = Path(path)
+
+    def strategy(market):
+        functions = runpy.run_path(str(path))
+        if "strategy" not in functions:
+            raise ValueError(f"{path.name} does not define strategy(market)")
+        return functions["strategy"](market)
 
     return strategy
 
@@ -72,10 +88,15 @@ class Practice:
         for name, strategy in ((YOU, self.strategy), (SIMPLE, simple_strategy)):
             try:
                 weights[name] = make_weights(strategy, market, market.times[-1], universe)
-            except Exception as error:  # noqa: BLE001  refused weights or a failing strategy: keep the old ones
+            except WeightsError as error:
                 weights[name] = None
                 if name == YOU:
                     self.log(f"{t:%H:%M} your weights were refused, your portfolio stays as it was: {error}")
+            except Exception as error:  # noqa: BLE001  a broken strategy file must not stop the game
+                weights[name] = None
+                if name == YOU:
+                    self.log(f"{t:%H:%M} your strategy failed, your portfolio stays as it was: "
+                             f"{type(error).__name__}: {error}")
         self.sent = weights
         if weights[YOU] is not None:
             shown = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(weights[YOU].items()))
@@ -132,6 +153,19 @@ class Practice:
         if self.dashboard:
             from .dashboard import write
             write(self.dashboard, self, next_event)
+
+    def eligible(self):
+        """The subnets that can be picked now: the 50 largest pools, largest first."""
+        market = self.history.market()
+        if not len(market.times):
+            return pd.DataFrame()
+        universe = market.universe()
+        latest = market.times[-1]
+        return pd.DataFrame({
+            "price": market.price.loc[latest, universe],
+            "tao_in": market.tao_in.loc[latest, universe],
+            "change_1h": change(market.price, "1h").loc[latest, universe],
+        })
 
     def standings(self):
         return pd.DataFrame(self.rounds).set_index("settled") if self.rounds else pd.DataFrame()
