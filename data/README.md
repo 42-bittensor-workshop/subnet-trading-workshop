@@ -3,6 +3,7 @@
 | File | Content |
 |---|---|
 | `history_15min.csv.gz` | Every subnet's pool, every 15 minutes, 2026-02-01 to 2026-03-01: 2,680 snapshots of 128 subnets |
+| `history_5min.csv.gz` | Every subnet's price every 5 minutes, over the 30 days before it was fetched: `load(HISTORY_5MIN_FILE)` |
 | `holders_daily.csv.gz` | Each subnet's number of holders, once a day |
 
 `load()` turns them into one table per field: one row per time, one column per subnet
@@ -23,7 +24,15 @@
 
 - **Pool snapshots:** the chain's state at one block every 15 minutes (every 75
   blocks), fetched from TaoStats.
-- **Holder counts:** from TaoSwap.
+- **Holder counts:** from Taoswap.
+- **5-minute history,** from the Taoswap API by `scripts/fetch_history.py` (`--days N`,
+  or `--genesis` for every candle since each subnet's first):
+  - `price` is the close of the 5-minute candle that ends at `time`;
+  - `tao_in`, `alpha_in` and `alpha_out` are the pool of the day before, from Taoswap's
+    daily subnet history: a row holds nothing from its future, and the 50 largest pools
+    change once a day;
+  - a subnet's rows before its current registration have the previous `life`;
+  - the holder counts of the days it covers are added to `holders_daily.csv.gz`.
 - These data come from third parties and are not covered by the repository's MIT
   license.
 - **Cleaning,** by `scripts/build_data.py`:
@@ -34,5 +43,6 @@
     February);
   - nothing is filled in.
 
-During the event, the live data comes from Kusanagi (TaoSwap), in the same format and
-with the same definitions.
+During the event, miners read the market from the validator (`GET /market`), in the
+same format: every pool on the chain every 5 minutes, after a start filled from
+Taoswap's 5-minute candles.
