@@ -171,8 +171,8 @@ run(my_strategy, get_market, send)
 - [docs/RULES.md](docs/RULES.md): every rule, the timing, and a worked example.
 - [docs/IDEAS.md](docs/IDEAS.md): ideas for signals, one line of code each.
 - [data/README.md](data/README.md): what is in the data.
-- [examples/taoswap_candles.py](examples/taoswap_candles.py): subnet candles from the
-  Taoswap API, live or since a subnet's first one, printed or drawn (`--plot chart.png`).
+- [examples/](examples/README.md): subnet candles from the Taoswap API, live or since a
+  subnet's first one, printed or drawn as a chart.
 
 ---
 
