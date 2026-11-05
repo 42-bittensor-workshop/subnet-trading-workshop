@@ -70,9 +70,11 @@ The same numbers are checked in `tests/test_scoring.py`.
   later starts with 1,000 TAO at its first deadline.
 - At any moment, miners are ranked by their account value after the last settled
   round.
-- After each settled round, the validator sets each miner's on-chain weight to its
-  gain above 1,000 TAO, as a share of all miners' gains above 1,000. A miner at or
-  below 1,000 gets 0. If nobody is above 1,000, every miner gets the same weight.
+- After each settled round, the validator sets each miner's on-chain weight to the
+  number of other miners it beats (a tie counts half), as a share of the total. First
+  place gets the most, last place 0, and miners with equal values get equal weights.
+  Only the order counts, so there is always a winner, even if every account is below
+  1,000 TAO.
 - The prizes follow the ranking at the last deadline of the event. Miners with exactly
   the same value share their place.
 

@@ -67,19 +67,30 @@ def test_miner_without_new_weights_keeps_them_and_pays_nothing():
     assert board.accounts["alice"].weights == {1: 1.0}
 
 
-def test_on_chain_weights_follow_gains_above_the_start():
+def board_with(values):
     board = Leaderboard()
-    board.register(["alice", "bob", "carol"])
-    board.accounts["alice"].value, board.accounts["bob"].value, board.accounts["carol"].value = 1300, 1100, 900
-    assert board.weights() == pytest.approx({"alice": 0.75, "bob": 0.25, "carol": 0.0})
+    board.register(values)
+    for miner, value in values.items():
+        board.accounts[miner].value = value
+    return board
+
+
+def test_on_chain_weights_follow_the_place_among_miners():
+    board = board_with({"alice": 1300, "bob": 1100, "carol": 900})
+    assert board.weights() == pytest.approx({"alice": 2 / 3, "bob": 1 / 3, "carol": 0.0})
     assert list(board.standings().index) == ["alice", "bob", "carol"]
 
 
-def test_on_chain_weights_are_equal_when_nobody_gains():
-    board = Leaderboard()
-    board.register(["alice", "bob"])
-    board.accounts["alice"].value = 950
-    assert board.weights() == {"alice": 0.5, "bob": 0.5}
+def test_there_is_a_winner_even_when_everyone_loses():
+    board = board_with({"alice": 950, "bob": 900, "carol": 800})
+    assert board.weights() == pytest.approx({"alice": 2 / 3, "bob": 1 / 3, "carol": 0.0})
+
+
+def test_ties_share_their_place():
+    assert board_with({"alice": 1000, "bob": 1000, "carol": 900}).weights() == pytest.approx(
+        {"alice": 0.5, "bob": 0.5, "carol": 0.0})
+    assert board_with({"alice": 1000, "bob": 1000}).weights() == {"alice": 0.5, "bob": 0.5}
+    assert board_with({"alice": 700}).weights() == {"alice": 1.0}
     assert Leaderboard().weights() == {}
 
 

@@ -99,12 +99,14 @@ class Leaderboard:
         return table.sort_values(ascending=False)
 
     def weights(self):
-        """On-chain weights: each miner's gain above START_BALANCE, as a share of all such
-        gains. If no miner is above START_BALANCE, every miner gets the same weight."""
-        if not self.accounts:
-            return {}
-        gains = {m: max(0.0, a.value - config.START_BALANCE) for m, a in self.accounts.items()}
-        total = sum(gains.values())
-        if total == 0:
-            return {m: 1 / len(gains) for m in gains}
-        return {m: g / total for m, g in gains.items()}
+        """On-chain weights by place: each miner's weight is the number of other miners it
+        beats (a tie counts half), as a share of the total. The last miner gets 0; miners
+        with equal values get equal weights. There is always a winner, even if every
+        account is below 1,000 TAO."""
+        values = {m: a.value for m, a in self.accounts.items()}
+        if len(values) < 2:
+            return {m: 1.0 for m in values}
+        beaten = {m: sum(1.0 if v > w else 0.5 if v == w else 0.0 for n, w in values.items() if n != m)
+                  for m, v in values.items()}
+        total = sum(beaten.values())
+        return {m: b / total for m, b in beaten.items()}

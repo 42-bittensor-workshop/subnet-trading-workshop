@@ -29,10 +29,11 @@ Example: your account holds 1,000 TAO, and you put half of it on a subnet that r
 2% while the average rose 0.3%. You gain 0.5 × 1.7% × 20 × 1,000 = **170 TAO** on that
 subnet. The next round, you play with your new balance.
 
-**Ranking.** After every round, miners are ranked by their account value. The
-validator gives each miner an on-chain weight in proportion to its gain above
-1,000 TAO, so a miner at or below 1,000 gets nothing. The ranking at the last
-deadline decides the prizes.
+**Ranking.** After every round, miners are ranked against each other by account
+value. On chain, the validator gives each miner a weight according to how many other
+miners it beats: first place gets the most, last place nothing. So there is always a
+winner, even on a day when everyone loses money. The ranking at the last deadline
+decides the prizes.
 
 All the rules, with the exact timing: [docs/RULES.md](docs/RULES.md).
 
