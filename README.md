@@ -33,29 +33,19 @@ All the rules, with the exact timing: [docs/RULES.md](docs/RULES.md).
 
 ## Why the game works this way
 
-This is a very simplified version of intraday trading. Real traders work around the
-clock, with real money and real costs. Here you have two or three hours, a handful of
-rounds and nothing at risk. So we kept the spirit of trading and chose rules that make
-sure something actually happens on the screen.
+This is a very simplified take on intraday trading, built to fit in a few hours and
+still be fun.
 
-Subnet prices barely move in 15 minutes, often by a few hundredths of a percent. On
-their own, those moves would hardly change your account, so we multiply them by 20, a
-bit like trading with leverage. A good round shows, and so does a bad one.
+Subnet prices barely move in 15 minutes, so your results are multiplied by 20, a bit
+like leverage, and good and bad choices show. You are compared with the average subnet,
+so that moves of the whole market, which nobody controls, don't decide the ranking.
+Every trade costs a small fee: shuffling picks at random loses, while a sensible
+strategy can come out ahead. The 5-minute pause locks your weights before the prices
+that count start to move, and only the 50 largest subnets count, because they are hard
+to push around.
 
-We also compare you with the average subnet instead of counting your raw gains. When
-the whole market goes up or down, that's not your doing, and it would decide the
-ranking more than your choices would. Measured against the average, only your choices
-count: if you hold the market, you neither win nor lose.
-
-Trading is never free, so every trade costs a small fee. It is set so that shuffling
-your picks at random every 15 minutes loses money, while a sensible strategy can still
-come out ahead. The 5-minute pause between the deadline and the trade locks your
-weights before the prices that count start to move. And we stick to the 50 largest
-subnets, which trade the most and are hard to push around.
-
-Real trading has more to it: large orders that move prices, risk limits, the stress
-of real money. We left that out on purpose. The point is to give you a feel for what
-it's like to look for a signal, test it, and see whether it holds up live.
+Real trading has much more to it, starting with real money. The point here is to get a
+feel for finding a signal, testing it, and seeing whether it holds up live.
 
 ## Three tools
 
