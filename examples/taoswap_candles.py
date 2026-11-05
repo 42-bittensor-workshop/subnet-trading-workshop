@@ -4,6 +4,8 @@
     python examples/taoswap_candles.py 64 --plot sn64.png                     # the same, and a chart redrawn at each read
     python examples/taoswap_candles.py 64 --resolution 60 --genesis --plot sn64_hourly.png --out sn64_hourly.csv
 
+examples/sn64_weekly.png (--resolution W) and examples/sn64_hourly.png (--resolution 60)
+are two such charts, drawn with --genesis.
 No key needed. Candles are cached 15 seconds on the API's side, so reading more often
 brings nothing new, and one address may send about 10 requests a second. Resolutions: 1, 5,
 15, 30, 60 and 240 minutes, D (a day) or W (a week, from Monday). A chart shows one

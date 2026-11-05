@@ -110,6 +110,8 @@ from subnet_trading.taoswap import Taoswap
 plot_candles(Taoswap().candles(64, "60", start="2026-10-01"));
 ```
 
+![Subnet 64's weekly candles since dTAO's launch, drawn by plot_candles](examples/sn64_weekly.png)
+
 A strategy can be:
 - **a signal:** your miner buys the 10 subnets with the highest values;
 - **fixed weights** that you choose, like `{64: 0.5, 4: 0.5}`;
