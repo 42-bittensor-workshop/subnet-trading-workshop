@@ -3,7 +3,7 @@
 Every 15 minutes (at :00, :15, :30 and :45 UTC) your strategy's weights are taken. Five
 minutes later the previous round is settled and the new weights are traded, at live
 prices, with the event's exact rules and scoring code. A dashboard in your browser shows
-your account next to the simple strategy and the market.
+your account round after round.
 
 Start it with scripts/practice.py.
 """
@@ -22,12 +22,7 @@ from .scoring import Account, Leaderboard
 from .signals import change
 from .weights import WeightsError
 
-YOU, SIMPLE, MARKET = "you", "simple strategy", "market"
-
-
-def simple_strategy(market):
-    """The reference: the 10 subnets whose price rose most over the last hour."""
-    return change(market.price, "1h")
+YOU = "you"
 
 
 def from_file(path):
@@ -75,8 +70,8 @@ class Practice:
         self.dashboard, self.log, self.sleep = dashboard, log, sleep
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.board = Leaderboard()
-        self.board.accounts = {YOU: Account(), SIMPLE: Account()}
-        self.values = {YOU: [], SIMPLE: [], MARKET: []}
+        self.board.accounts = {YOU: Account()}
+        self.values = {YOU: []}
         self.rounds = []      # one row per settled round, for the standings
         self.timeline = []    # every round: its times, its status and your result
         self.open = None      # the round in progress
@@ -95,7 +90,7 @@ class Practice:
         market = self.history.market()
         universe = market.universe()
         weights = {}
-        for name, strategy in ((YOU, self.strategy), (SIMPLE, simple_strategy)):
+        for name, strategy in ((YOU, self.strategy),):
             try:
                 weights[name] = make_weights(strategy, market, market.times[-1], universe)
             except WeightsError as error:
@@ -140,14 +135,11 @@ class Practice:
         self.open = None
 
     def record(self, t):
-        values = {name: self.board.accounts[name].value for name in (YOU, SIMPLE)}
-        values[MARKET] = config.START_BALANCE
-        for name, value in values.items():
-            self.values[name].append((t, value))
-        self.rounds.append({"settled": t, **values})
-        self.log(f"{t:%H:%M} round {self.timeline[-1]['round']} result: you {values[YOU]:,.1f} TAO "
-                 f"({self.timeline[-1]['you']:+.1f}), simple strategy {values[SIMPLE]:,.1f}, "
-                 f"market {values[MARKET]:,.0f}")
+        value = self.board.accounts[YOU].value
+        self.values[YOU].append((t, value))
+        self.rounds.append({"settled": t, YOU: value})
+        self.log(f"{t:%H:%M} round {self.timeline[-1]['round']} result: your account {value:,.1f} TAO "
+                 f"({self.timeline[-1]['you']:+.1f})")
 
     def play(self, rounds=None):
         """Play `rounds` rounds (None: until stopped). The last one is settled at the next deadline."""

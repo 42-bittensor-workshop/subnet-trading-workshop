@@ -110,8 +110,8 @@ python scripts/practice.py --strategy strategies/example_strategy.py --history-h
 
 It loads recent prices from the chain (about 2 minutes for 24 hours) and opens the
 dashboard in your browser. Then it plays round after round: it takes your weights at
-:00, :15, :30 and :45 UTC, trades 5 minutes later, and shows your account next to a
-simple strategy and the market. Stop it with Ctrl+C.
+:00, :15, :30 and :45 UTC, trades 5 minutes later, and shows your account round after
+round. Stop it with Ctrl+C.
 
 | Flag | What it does | Default |
 |---|---|---|

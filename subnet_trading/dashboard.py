@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from . import config
 
-COLORS = {"you": "#2a78d6", "simple strategy": "#eb6834", "market": "#8a897f"}
+COLORS = {"you": "#2a78d6"}
 
 
 def _chart(series, width=720, height=260, pad=44):
@@ -24,6 +24,10 @@ def _chart(series, width=720, height=260, pad=44):
         v = lo + frac * (hi - lo)
         parts.append(f'<line x1="{pad}" x2="{width - pad}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
                      f'<text x="{pad - 6}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{v:,.0f}</text>')
+    base = y(config.START_BALANCE)
+    parts.append(f'<line x1="{pad}" x2="{width - pad}" y1="{base:.1f}" y2="{base:.1f}" class="base"/>'
+                 f'<text x="{width - pad}" y="{base - 6:.1f}" text-anchor="end" class="tick">'
+                 f'1,000 TAO: the market</text>')
     for name, values in series.items():
         if not values:
             continue
@@ -86,11 +90,11 @@ def _rounds(practice):
 
 
 def write(path, practice, next_event):
-    latest = {name: (values[-1][1] if values else config.START_BALANCE) for name, values in practice.values.items()}
-    rows = "".join(
-        f'<tr><td><span class="dot" style="background:{COLORS[n]}"></span>{html.escape(n)}</td>'
-        f'<td class="num">{v:,.1f} TAO</td><td class="num">{100 * (v / config.START_BALANCE - 1):+.1f}%</td></tr>'
-        for n, v in sorted(latest.items(), key=lambda item: -item[1]))
+    values = practice.values["you"]
+    value = values[-1][1] if values else config.START_BALANCE
+    rows = (f'<tr><td><span class="dot" style="background:{COLORS["you"]}"></span>your account</td>'
+            f'<td class="num">{value:,.1f} TAO</td>'
+            f'<td class="num">{100 * (value / config.START_BALANCE - 1):+.1f}% against the market</td></tr>')
     weights = practice.sent.get("you") or {}
     picks = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(weights.items())) or "none yet"
     target = next_event.isoformat() if next_event else ""
@@ -101,7 +105,7 @@ def write(path, practice, next_event):
 @media (prefers-color-scheme: dark) {{ :root {{ --bg:#1a1a19; --ink:#f0efec; --muted:#c3c2b7; --grid:#3a3a37; }} }}
 body {{ background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, sans-serif; margin:0 auto; max-width:760px; padding:16px; }}
 h1 {{ font-size:20px; margin:8px 0 4px; }} .muted, .tick {{ color:var(--muted); fill:var(--muted); font-size:12px; }}
-.grid {{ stroke:var(--grid); }} table {{ border-collapse:collapse; width:100%; margin:12px 0; }}
+.grid {{ stroke:var(--grid); }} .base {{ stroke:var(--muted); stroke-dasharray:5 4; }} table {{ border-collapse:collapse; width:100%; margin:12px 0; }}
 td {{ padding:6px 4px; border-bottom:1px solid var(--grid); }} .num {{ text-align:right; font-variant-numeric:tabular-nums; }}
 .dot {{ display:inline-block; width:10px; height:10px; border-radius:5px; margin-right:8px; }} svg {{ width:100%; height:auto; }}
 </style></head><body>

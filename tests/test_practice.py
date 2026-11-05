@@ -4,7 +4,7 @@ import pytest
 
 from subnet_trading import config
 from subnet_trading.live import History, snapshot_from_rows
-from subnet_trading.practice import SIMPLE, YOU, Practice, from_file, from_python_file, next_deadline
+from subnet_trading.practice import YOU, Practice, from_file, from_python_file, next_deadline
 from subnet_trading.scoring import Account, market_return
 
 START = datetime(2026, 11, 20, 10, 1, tzinfo=timezone.utc)
@@ -91,7 +91,6 @@ def test_refused_weights_keep_the_portfolio_and_are_reported():
     practice.play(rounds=1)
     assert practice.board.accounts[YOU].value == config.START_BALANCE
     assert any("refused" in line for line in logs)
-    assert practice.board.accounts[SIMPLE].value != config.START_BALANCE  # the reference still plays
 
 
 def test_weights_file_is_read_at_each_deadline(tmp_path):
@@ -122,7 +121,8 @@ def test_dashboard_is_written(tmp_path):
     practice.dashboard = tmp_path / "practice.html"
     practice.play(rounds=1)
     page = practice.dashboard.read_text()
-    assert "Practice game" in page and "simple strategy" in page and "TAO" in page
+    assert "Practice game" in page and "your account" in page and "the market" in page
+    assert "simple strategy" not in page
     assert "your result" in page and "Round 1" in page
 
 
