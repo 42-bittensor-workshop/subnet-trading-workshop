@@ -97,6 +97,9 @@ rising = change(market.price, "1h")              # a signal: the price change ov
 backtest(rising, market, start="2026-02-20", end="2026-02-21").summary()
 ```
 
+`load(HISTORY_5MIN_FILE)` loads the 5-minute history instead, up to the day it was
+fetched: with it, a backtest round has exactly the event's timing.
+
 A strategy can be:
 - **a signal:** your miner buys the 10 subnets with the highest values;
 - **fixed weights** that you choose, like `{64: 0.5, 4: 0.5}`;
@@ -125,25 +128,39 @@ round. Stop it with Ctrl+C.
 `strategies/my_weights.json` and run with `--weights strategies/my_weights.json`.
 Both files are read again at every deadline, so you can change your strategy while
 the game runs, and the dashboard lists the 50 subnets you can pick. Holder counts
-aren't available live yet: they come from TaoSwap, not from the chain.
+aren't available live yet: they come from Taoswap, not from the chain.
 
 ## 3. The event: your miner
 
 Your miner sends one thing every 15 minutes: a dict of subnet ids and weights. During
-the event you start it with your strategy:
+the event, with your Bittensor wallet and the validator's address from the organisers:
+
+```bash
+pip install -e ".[miner]"
+python scripts/miner.py --validator http://VALIDATOR:8000 --wallet YOUR_WALLET --strategy strategies/example_strategy.py
+```
+
+30 seconds before each deadline it reads the market from the validator, runs your
+strategy and sends the weights, signed with your hotkey. As in the practice game,
+`--weights FILE` replaces `--strategy`, and the file is read again at every deadline.
+In Python, `connect` gives the two functions `run` needs:
 
 ```python
+from subnet_trading.event import connect
+
+get_market, send = connect("http://VALIDATOR:8000", wallet="YOUR_WALLET")
 run(my_strategy, get_market, send)
 ```
 
-The organisers give you `get_market` (the live market) and `send` (delivery to the
-validator). `next_weights(my_strategy, market)` shows what it would send right now.
+`next_weights(my_strategy, market)` shows what it would send right now.
 
 ## More
 
 - [docs/RULES.md](docs/RULES.md): every rule, the timing, and a worked example.
 - [docs/IDEAS.md](docs/IDEAS.md): ideas for signals, one line of code each.
 - [data/README.md](data/README.md): what is in the data.
+- [examples/taoswap_candles.py](examples/taoswap_candles.py): subnet candles from the
+  Taoswap API, live or since a subnet's first one.
 
 ---
 
