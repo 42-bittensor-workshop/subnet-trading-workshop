@@ -14,13 +14,14 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from subnet_trading import backtest, change, config, load, random_strategy  # noqa: E402
+from subnet_trading import backtest, change, config, load, random_strategy  # noqa: E402,F401
 
 
 def raw_rounds(strategy, market):
     """Per round: the gain over the market before FACTOR and fees, and the share traded."""
     r = backtest(strategy, market, factor=1, fee_rate=0).rounds
-    return (r["change"] / config.START_BALANCE).to_numpy(), r["turnover"].to_numpy()
+    before = r["value"] - r["change"]
+    return (r["change"] / before).to_numpy(), r["turnover"].to_numpy()
 
 
 market = load()

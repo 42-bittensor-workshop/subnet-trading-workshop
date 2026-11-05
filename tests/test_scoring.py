@@ -20,12 +20,28 @@ def test_hand_calculated_round():
 
 
 def test_worked_example_of_the_rules():
-    # docs/RULES.md, "Worked example": fee 1.875 TAO, gain 100 TAO, account 1,098.125 TAO.
+    # docs/RULES.md, "Worked example": fee 1.875 TAO, then a 10% gain on the remaining 998.125 TAO.
     returns = {1: 0.02, 2: -0.01, 3: 0.0}
     account = Account()
     assert account.trade({1: 0.5, 2: 0.25}) == pytest.approx(1.875)
-    assert account.hold(returns, market_return(returns, [1, 2, 3])) == pytest.approx(100)
-    assert account.value == pytest.approx(1098.125)
+    assert account.hold(returns, market_return(returns, [1, 2, 3])) == pytest.approx(99.8125)
+    assert account.value == pytest.approx(1097.9375)
+
+
+def test_gains_and_losses_carry_over():
+    account = Account()
+    account.weights = {1: 1.0}
+    account.hold({1: 0.01, 2: -0.01}, 0.0)          # +20% of 1,000
+    assert account.value == pytest.approx(1200)
+    account.hold({1: 0.01, 2: -0.01}, 0.0)          # +20% of 1,200
+    assert account.value == pytest.approx(1440)
+
+
+def test_an_account_cannot_fall_below_zero():
+    account = Account()
+    account.weights = {1: 1.0}
+    account.hold({1: -0.10, 2: 0.0}, 0.0)           # 20 x -10% would be -200%
+    assert account.value == 0
 
 
 def test_fees():
@@ -47,8 +63,7 @@ def test_miner_without_new_weights_keeps_them_and_pays_nothing():
     board.run_round({1: 0.01, 2: 0.0}, universe=[1, 2])
     after_first = board.accounts["alice"].value
     board.run_round({1: 0.01, 2: 0.0}, universe=[1, 2])  # nothing submitted
-    gain = config.START_BALANCE * config.FACTOR * (0.01 - 0.005)
-    assert board.accounts["alice"].value == pytest.approx(after_first + gain)
+    assert board.accounts["alice"].value == pytest.approx(after_first * (1 + config.FACTOR * (0.01 - 0.005)))
     assert board.accounts["alice"].weights == {1: 1.0}
 
 

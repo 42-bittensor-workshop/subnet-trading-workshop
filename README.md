@@ -17,17 +17,36 @@ live against everyone else.
 
 ## How you are scored
 
-Each round, two things happen to your account:
+Your account starts at 1,000 TAO and **carries over**: each round plays with the TAO
+you have. Each round, two things happen:
 
 1. **The fee:** 0.25% of the amount you trade to move to your new weights. Keeping the
    same weights costs nothing.
 2. **The gain:** for each subnet, its weight × (its price change − the average price
-   change of the 50 subnets), multiplied by 20 and by 1,000 TAO.
+   change of the 50 subnets) × 20, applied to your account.
 
-Example: you put half your weight on a subnet that rose 2% while the average rose
-0.3%. You gain 0.5 × 1.7% × 20 × 1,000 = **170 TAO** on that subnet.
+Example: your account holds 1,000 TAO, and you put half of it on a subnet that rose
+2% while the average rose 0.3%. You gain 0.5 × 1.7% × 20 × 1,000 = **170 TAO** on that
+subnet. The next round, you play with your new balance.
 
 All the rules, with the exact timing: [docs/RULES.md](docs/RULES.md).
+
+## Why the rules look like this
+
+- **Compared with the average subnet.** When every subnet rises or falls together,
+  nobody chose that. Comparing with the average measures only your choices, and doing
+  nothing earns nothing.
+- **Times 20.** In 15 minutes, prices move by tiny amounts, often a few hundredths of
+  a percent. Multiplying by 20, like leverage, makes good and bad choices show: a
+  typical round moves an account by about 1%.
+- **A fee on every trade.** Real trading always costs something. The fee rewards
+  changing your weights when you have a reason, not all the time. At 0.25%, trading at
+  random loses about as much as a simple signal gains.
+- **A 5-minute pause.** Your weights are locked before the prices that score them
+  start to count, so nobody can react after seeing the move.
+- **Only the 50 largest subnets.** They trade the most, and small pools are easy to
+  push around.
+- **Virtual TAO.** Nobody risks real money.
 
 ## Get started
 

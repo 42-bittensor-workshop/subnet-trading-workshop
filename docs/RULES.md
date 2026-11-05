@@ -30,39 +30,39 @@ why not.
 
 ## Scoring
 
-Your account starts at **1,000 TAO**. Every round, the same 1,000 TAO is placed
-according to your weights.
+Your account starts at **1,000 TAO** and carries over from round to round. Each
+round, its current value V is placed according to your weights.
 
 **The fee**, at t+5: 0.25% of the amount traded to move from your previous weights to
 the new ones. Selling one subnet and buying another trades twice.
 
 ```
-fee = 0.25% × (sum of |new weight − old weight| over all subnets) × 1,000 TAO
+fee = 0.25% × (sum of |new weight − old weight| over all subnets) × V
 ```
 
-**The gain**, from t+5 to t+20, with r = each subnet's price change and m = the average
-price change of the 50 subnets:
+**The gain**, from t+5 to t+20, on the value left after the fee, with r = each
+subnet's price change and m = the average price change of the 50 subnets:
 
 ```
-gain = 20 × (sum over your subnets of weight × (r − m)) × 1,000 TAO
+gain = 20 × (sum over your subnets of weight × (r − m)) × V
 ```
 
-Your account's value is 1,000 TAO plus all gains, minus all losses and fees. The
-ranking at the end of the event uses this value.
+An account cannot fall below 0. The ranking at the end of the event uses the
+account's value.
 
 ## Worked example
 
 Three subnets in the market: subnet 1 rises 2%, subnet 2 falls 1%, subnet 3 stays
-flat. The average m is +0.333%. You start from nothing and choose `{1: 0.5, 2: 0.25}`:
-a quarter of your TAO stays aside.
+flat. The average m is +0.333%. Your account holds 1,000 TAO with no position, and you
+choose `{1: 0.5, 2: 0.25}`: a quarter of your TAO stays aside.
 
-- Fee: you trade 0.5 + 0.25 = 0.75 of the 1,000 TAO, so 0.25% × 0.75 × 1,000 =
-  **1.875 TAO**.
+- Fee: you trade 0.5 + 0.25 = 0.75 of your 1,000 TAO, so 0.25% × 0.75 × 1,000 =
+  **1.875 TAO**. 998.125 TAO remain.
 - Gain: 0.5 × (2% − 0.333%) + 0.25 × (−1% − 0.333%) = 0.833% − 0.333% = 0.5%, then
-  20 × 0.5% × 1,000 = **100 TAO**.
+  20 × 0.5% = +10% of 998.125 TAO = **99.8125 TAO**.
 
-Your account goes from 1,000 to 1,098.125 TAO. The same numbers are checked in
-`tests/test_scoring.py`.
+Your account goes from 1,000 to 1,097.94 TAO, and the next round starts from there.
+The same numbers are checked in `tests/test_scoring.py`.
 
 ## How the two numbers were set
 

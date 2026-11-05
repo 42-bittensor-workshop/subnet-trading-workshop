@@ -1,11 +1,12 @@
 """How an account is scored. The notebook's tests and the event's validator use this same code.
 
-Every round, the same START_BALANCE (1,000 TAO) is placed according to the weights:
+The account starts at START_BALANCE (1,000 TAO) and carries over from round to round:
+each round places the account's current value according to the weights.
     1. Trade: moving from the previous weights to the new ones costs FEE_RATE times the
        amount traded (selling one subnet and buying another trades twice).
     2. Hold: every TAO placed in a subnet earns how much that subnet beat the market (the
        average of the universe) over the round, multiplied by FACTOR. TAO left aside earns 0.
-Gains, losses and fees add up in the account's value, which starts at 1,000 TAO.
+An account cannot fall below 0.
 """
 
 import pandas as pd
@@ -48,16 +49,16 @@ class Account:
 
     def trade(self, new_weights):
         """Move to new weights; returns the fee paid in TAO."""
-        fee = rebalance_cost(self.weights, new_weights, config.START_BALANCE, self.fee_rate)
+        fee = rebalance_cost(self.weights, new_weights, self.value, self.fee_rate)
         self.value -= fee
         self.weights = dict(new_weights)
         return fee
 
     def hold(self, returns, market):
-        """Apply one round of prices; returns the gain (or loss) in TAO."""
-        gain = config.START_BALANCE * self.factor * round_gain(self.weights, returns, market)
-        self.value += gain
-        return gain
+        """Apply one round of prices to the current value; returns the gain (or loss) in TAO."""
+        before = self.value
+        self.value = max(0.0, before * (1 + self.factor * round_gain(self.weights, returns, market)))
+        return self.value - before
 
 
 class Leaderboard:
