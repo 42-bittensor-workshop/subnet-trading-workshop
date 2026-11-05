@@ -24,6 +24,8 @@
 - **Pool snapshots:** the chain's state at one block every 15 minutes (every 75
   blocks), fetched from TaoStats.
 - **Holder counts:** from TaoSwap.
+- These data come from third parties and are not covered by the repository's MIT
+  license.
 - **Cleaning,** by `scripts/build_data.py`:
   - root (netuid 0) is dropped;
   - amounts are converted from rao to TAO or alpha;

@@ -144,3 +144,8 @@ validator). `next_weights(my_strategy, market)` shows what it would send right n
 - [docs/RULES.md](docs/RULES.md): every rule, the timing, and a worked example.
 - [docs/IDEAS.md](docs/IDEAS.md): ideas for signals, one line of code each.
 - [data/README.md](data/README.md): what is in the data.
+
+---
+
+Designed by taogalaxy, a quantitative investment firm building systematic strategies
+on Bittensor.
