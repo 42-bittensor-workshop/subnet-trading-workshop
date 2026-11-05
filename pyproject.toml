@@ -12,6 +12,8 @@ dependencies = ["pandas>=2.0", "numpy>=1.24", "matplotlib>=3.7", "async-substrat
 
 [project.optional-dependencies]
 dev = ["pytest", "nbformat", "nbclient", "ipykernel"]
+miner = ["bittensor-wallet>=4.1"]
+validator = ["bittensor>=10.5,<11", "bittensor-wallet>=4.1"]
 
 [tool.setuptools]
 packages = ["subnet_trading"]

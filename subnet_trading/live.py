@@ -70,6 +70,14 @@ def snapshot_from_rows(rows, block, timestamp_ms):
     return {"time": pd.Timestamp(time_), "block": block, "pools": pd.DataFrame.from_dict(pools, orient="index")}
 
 
+def round_returns(start, end):
+    """Each subnet's price change between two snapshots, none for a subnet missing from one of
+    them or that changed life in between (its alpha outside the pool fell by more than half)."""
+    before, after = start["pools"].align(end["pools"], join="inner", axis=0)
+    change = (after["price"] / before["price"] - 1).where(after["alpha_out"] >= 0.5 * before["alpha_out"])
+    return {int(n): float(r) for n, r in change.dropna().items()}
+
+
 class History:
     """Snapshots collected over a session, turned into a Market for strategies."""
 
