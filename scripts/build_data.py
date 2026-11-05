@@ -1,10 +1,10 @@
 """Build data/ from raw pool snapshots and daily holder counts.
 
-    python scripts/build_data.py RAW_POOLS_15MIN.csv.gz DAILY_PANEL.csv
+    python scripts/build_data.py --pools RAW_POOLS_15MIN.csv.gz --daily-panel DAILY_PANEL.csv
 
-RAW_POOLS_15MIN: one row per subnet per snapshot, with the columns netuid, timestamp,
+--pools: one row per subnet per snapshot, with the columns netuid, timestamp,
 block_number, price, total_tao, alpha_in_pool, alpha_staked (TaoStats pool history:
-amounts in rao, price in TAO). DAILY_PANEL: one row per subnet per day with holders_count.
+amounts in rao, price in TAO). --daily-panel: one row per subnet per day with holders_count.
 
 Writes:
     data/history_15min.csv.gz  time, netuid, price, tao_in, alpha_in, alpha_out, life
@@ -18,7 +18,7 @@ Cleaning rules (data/README.md):
     3. Nothing is filled in.
 """
 
-import sys
+import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -73,6 +73,8 @@ def main(raw_path, panel_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise SystemExit(__doc__)
-    main(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--pools", required=True, metavar="FILE", help="raw pool snapshots, every 15 minutes")
+    parser.add_argument("--daily-panel", required=True, metavar="FILE", help="daily rows with holders_count")
+    args = parser.parse_args()
+    main(args.pools, args.daily_panel)

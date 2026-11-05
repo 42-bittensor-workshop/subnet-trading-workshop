@@ -126,7 +126,7 @@ next_weights(my_strategy, market)"""),
 Before the event, try your strategy live with the practice game. Save it in a file with a `strategy(market)` function, like `strategies/example_strategy.py`, then run in a terminal:
 
 ```bash
-python scripts/practice.py strategies/example_strategy.py
+python scripts/practice.py --strategy strategies/example_strategy.py
 ```
 
 It plays the real rules on live prices and shows your account on a dashboard. **One last thing:** what worked in the past may not work next. Live, you will find out!"""),

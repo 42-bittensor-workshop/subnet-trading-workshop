@@ -1,17 +1,13 @@
 """The practice game: the real competition, alone, on live subnet prices.
 
-    python scripts/practice.py strategies/example_strategy.py       your strategy file
-    python scripts/practice.py --weights strategies/my_weights.json  hand-picked weights
+    python scripts/practice.py --strategy strategies/example_strategy.py
+    python scripts/practice.py --weights strategies/my_weights.json
 
-A strategy file defines `strategy(market)`, as in the notebook. Both files are read again
-at every deadline (:00, :15, :30, :45 UTC), so you can edit them while the game runs:
-changes apply from the next round. A dashboard opens in your browser, with the 50
-subnets you can pick. Stop with Ctrl+C.
-
-Options:
-    --rounds N           stop after N deadlines (default: run until stopped)
-    --history-hours H    recent history loaded at start, for your signals (default: 24)
-    --dashboard FILE     where to write the dashboard (default: practice.html)
+--strategy takes a Python file defining strategy(market), as in the notebook. --weights
+takes a JSON file of hand-picked weights. Both files are read again at every deadline
+(:00, :15, :30, :45 UTC), so you can edit them while the game runs: changes apply from
+the next round. A dashboard opens in your browser, with the 50 subnets you can pick.
+Stop with Ctrl+C.
 """
 
 import argparse
@@ -25,24 +21,26 @@ from subnet_trading.live import ARCHIVE_URL, Chain, History, backfill  # noqa: E
 from subnet_trading.practice import Practice, from_file, from_python_file  # noqa: E402
 
 
-def main():
+def parse(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("strategy_file", nargs="?", help="a Python file defining strategy(market)")
-    parser.add_argument("--weights", help="a JSON file of hand-picked weights")
-    parser.add_argument("--rounds", type=int)
-    parser.add_argument("--history-hours", type=float, default=24)
-    parser.add_argument("--dashboard", default="practice.html")
-    parser.add_argument("--url", default=ARCHIVE_URL)
-    args = parser.parse_args()
-    if bool(args.strategy_file) == bool(args.weights):
-        parser.error("give either a strategy file or --weights")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--strategy", metavar="FILE", help="a Python file defining strategy(market)")
+    source.add_argument("--weights", metavar="FILE", help="a JSON file of hand-picked weights")
+    parser.add_argument("--history-hours", type=float, default=24, metavar="H",
+                        help="hours of recent prices loaded at start, for your signals (default: 24)")
+    parser.add_argument("--rounds", type=int, metavar="N", help="stop after N deadlines (default: run until Ctrl+C)")
+    parser.add_argument("--dashboard", default="practice.html", metavar="FILE",
+                        help="where to write the dashboard (default: practice.html)")
+    parser.add_argument("--url", default=ARCHIVE_URL, help=f"the chain node to read (default: {ARCHIVE_URL})")
+    args = parser.parse_args(argv)
+    if args.strategy and "strategy" not in runpy.run_path(args.strategy):  # fail now, not at the first deadline
+        parser.error(f"{args.strategy} must define a function strategy(market)")
+    return args
 
-    if args.weights:
-        strategy = from_file(args.weights)
-    else:
-        if "strategy" not in runpy.run_path(args.strategy_file):  # fail now rather than at the first deadline
-            parser.error(f"{args.strategy_file} must define a function strategy(market)")
-        strategy = from_python_file(args.strategy_file)
+
+def main():
+    args = parse()
+    strategy = from_file(args.weights) if args.weights else from_python_file(args.strategy)
     chain, history = Chain(args.url), History()
     print(f"Loading the last {args.history_hours:g} hours of subnet prices from the chain...")
     for snapshot in backfill(chain, args.history_hours):

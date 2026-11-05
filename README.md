@@ -104,22 +104,24 @@ A strategy can be:
 ## 2. Practise live
 
 ```bash
-python scripts/practice.py strategies/example_strategy.py
+python scripts/practice.py --strategy strategies/example_strategy.py --history-hours 24 --dashboard practice.html
 ```
 
-It loads the last 24 hours of prices from the chain (about 2 minutes) and opens the
+It loads recent prices from the chain (about 2 minutes for 24 hours) and opens the
 dashboard in your browser. Then it plays round after round: it takes your weights at
 :00, :15, :30 and :45 UTC, trades 5 minutes later, and shows your account next to a
 simple strategy and the market. Stop it with Ctrl+C.
 
-Your strategy goes in a small Python file with one function, `strategy(market)`;
-`strategies/example_strategy.py` is a starting point. To pick by hand instead, edit
-`strategies/my_weights.json` whenever you like and run:
+| Flag | What it does | Default |
+|---|---|---|
+| `--strategy FILE` | Your strategy: a Python file with one function, `strategy(market)` | |
+| `--weights FILE` | Hand-picked weights in a JSON file, instead of `--strategy` | |
+| `--history-hours H` | Hours of recent prices loaded at start, so your signals work from the first round | 24 |
+| `--rounds N` | Stop after N deadlines | until Ctrl+C |
+| `--dashboard FILE` | Where the dashboard is written | `practice.html` |
 
-```bash
-python scripts/practice.py --weights strategies/my_weights.json
-```
-
+`strategies/example_strategy.py` is a starting point. To pick by hand, edit
+`strategies/my_weights.json` and run with `--weights strategies/my_weights.json`.
 Both files are read again at every deadline, so you can change your strategy while
 the game runs, and the dashboard lists the 50 subnets you can pick. Holder counts
 aren't available live yet: they come from TaoSwap, not from the chain.

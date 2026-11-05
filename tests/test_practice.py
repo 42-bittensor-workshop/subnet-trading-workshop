@@ -150,3 +150,20 @@ def test_dashboard_lists_the_subnets_you_can_pick(tmp_path):
     assert "The 50 subnets you can pick" in page
     assert page.split("The 50 subnets you can pick")[1].count("<tr><td>") == 50
     assert len(practice.eligible()) == 50
+
+
+def test_practice_command_line():
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "practice_cli", Path(__file__).resolve().parent.parent / "scripts" / "practice.py")
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    args = cli.parse(["--strategy", "strategies/example_strategy.py", "--history-hours", "4", "--rounds", "2"])
+    assert (args.strategy, args.history_hours, args.rounds, args.dashboard) == \
+        ("strategies/example_strategy.py", 4, 2, "practice.html")
+    assert cli.parse(["--weights", "strategies/my_weights.json"]).weights == "strategies/my_weights.json"
+    with pytest.raises(SystemExit):
+        cli.parse([])                                                      # one of the two is required
+    with pytest.raises(SystemExit):
+        cli.parse(["--strategy", "strategies/example_strategy.py", "--weights", "strategies/my_weights.json"])
