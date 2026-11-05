@@ -100,6 +100,16 @@ backtest(rising, market, start="2026-02-20", end="2026-02-21").summary()
 `load(HISTORY_5MIN_FILE)` loads the 5-minute history instead, up to the day it was
 fetched: with it, a backtest round has exactly the event's timing.
 
+`plot_candles` draws a subnet's candles from the Taoswap API, like the example's
+`--plot`:
+
+```python
+from subnet_trading import plot_candles
+from subnet_trading.taoswap import Taoswap
+
+plot_candles(Taoswap().candles(64, "60", start="2026-10-01"));
+```
+
 A strategy can be:
 - **a signal:** your miner buys the 10 subnets with the highest values;
 - **fixed weights** that you choose, like `{64: 0.5, 4: 0.5}`;
