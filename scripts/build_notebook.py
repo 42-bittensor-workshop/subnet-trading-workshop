@@ -35,7 +35,7 @@ pd.set_option("display.float_format", "{:.4f}".format)"""),
 
 - You start with **1,000 TAO** (virtual).
 - Every **15 minutes**, your miner sends a list of **up to 10 subnets with weights**, for example `{64: 0.5, 4: 0.3, 51: 0.2}`.
-- After a 5-minute pause, your TAO is placed that way for 15 minutes.
+- After a 5-minute pause, your TAO is placed that way for 10 minutes. Then the round's result comes in, and the next round starts.
 - You **gain** when your subnets do better than the average subnet, and **lose** when they do worse. Every trade costs a small **fee**.
 - Your account **carries over**: each round plays with the TAO you have.
 - Whoever has the most TAO at the end wins.
@@ -97,7 +97,7 @@ for d in pd.date_range("2026-02-15", "2026-02-21"):
         "random picks": backtest(random_strategy(seed=d.day), market, **window).value,
     }
 pd.DataFrame(rows).T.round(0)"""),
-    md("""A strategy you can trust wins on most days, not just one. That is what professional traders look for: an edge that repeats."""),
+    md("""Compare the two columns day by day. Over a single week, luck weighs a lot: even a strategy with a real edge loses on some days, and random picks win now and then. A strategy you can trust beats random picks over many days, not just on one. That is what professional traders look for: an edge that repeats."""),
 
     md("""## 7. Your turn: try ideas
 

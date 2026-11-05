@@ -11,7 +11,7 @@ COLORS = {"you": "#2a78d6", "simple strategy": "#eb6834", "market": "#8a897f"}
 def _chart(series, width=720, height=260, pad=44):
     points = [(t, v) for values in series.values() for t, v in values]
     if len(points) < 1:
-        return '<p class="muted">The chart appears after the first round is settled (about 20 minutes).</p>'
+        return '<p class="muted">The chart appears after the first round is settled (15 minutes after its deadline).</p>'
     times = sorted({t for t, _ in points})
     lo = min(min(v for _, v in points), config.START_BALANCE)
     hi = max(max(v for _, v in points), config.START_BALANCE)
@@ -53,6 +53,38 @@ def _eligible(practice, weights):
             '<td class="num">last hour</td><td class="num">your weight</td></tr>' + "".join(rows) + "</table></details>")
 
 
+def _status(row):
+    if row["status"] == "pause":
+        return f"pause until {row['trade']:%H:%M}"
+    if row["status"] == "live":
+        return f"live until {row['result']:%H:%M}"
+    return f"{row['you']:+,.1f} TAO"
+
+
+def _now_line(practice):
+    if not practice.timeline:
+        return "The first round starts at the next deadline."
+    row = practice.timeline[-1]
+    if row["status"] == "pause":
+        return (f"Round {row['round']}: your weights are locked. They are traded at {row['trade']:%H:%M}, "
+                f"and the result comes in at {row['result']:%H:%M}.")
+    if row["status"] == "live":
+        return (f"Round {row['round']}: live since {row['trade']:%H:%M}. "
+                f"The result comes in at {row['result']:%H:%M}, together with the next deadline.")
+    return f"Round {row['round']} is settled. The next round starts at the next deadline."
+
+
+def _rounds(practice):
+    if not practice.timeline:
+        return ""
+    rows = "".join(
+        f'<tr><td>{r["round"]}</td><td class="num">{r["deadline"]:%H:%M}</td><td class="num">{r["trade"]:%H:%M}</td>'
+        f'<td class="num">{r["result"]:%H:%M}</td><td class="num">{_status(r)}</td></tr>'
+        for r in reversed(practice.timeline[-8:]))
+    return ('<table><tr class="muted"><td>round</td><td class="num">deadline</td><td class="num">traded</td>'
+            '<td class="num">result</td><td class="num">your result</td></tr>' + rows + "</table>")
+
+
 def write(path, practice, next_event):
     latest = {name: (values[-1][1] if values else config.START_BALANCE) for name, values in practice.values.items()}
     rows = "".join(
@@ -76,8 +108,10 @@ td {{ padding:6px 4px; border-bottom:1px solid var(--grid); }} .num {{ text-alig
 <h1>Practice game</h1>
 <p class="muted">Live subnet prices, the event's rules. Next step <b id="next">{html.escape(target[11:16]) if target else "-"}</b>
 <span id="left"></span>. This page reloads every 20 seconds.</p>
+<p><b>{html.escape(_now_line(practice))}</b></p>
 <table>{rows}</table>
 {_chart(practice.values)}
+{_rounds(practice)}
 <p><b>Your latest weights:</b> {html.escape(picks)}</p>
 {_eligible(practice, weights)}
 <p class="muted">Rounds settled: {len(practice.rounds)}. Updated {datetime.now(timezone.utc):%H:%M:%S} UTC.</p>

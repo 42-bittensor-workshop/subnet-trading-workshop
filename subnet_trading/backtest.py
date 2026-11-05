@@ -6,9 +6,11 @@ A strategy is one of:
     - a function:     def my_strategy(market): ... return {netuid: weight}
                       It receives only the data known at the deadline.
 
-Timing, as in the event: the weights decided at a deadline are traded HALT_MINUTES later
-and held for ROUND_MINUTES. With 15-minute snapshots, the 5-minute pause is rounded up
-to one snapshot: in backtests the trade happens 15 minutes after the deadline.
+Timing, as in the event: rounds follow each other. The weights decided at a deadline are
+traded HALT_MINUTES later and held for HOLD_MINUTES; the result comes in at the next
+deadline. Pause and holding are rounded up to whole snapshots: with the provided
+15-minute history, a backtest round lasts 30 minutes (15 of pause, 15 live); with
+5-minute data, it matches the event exactly.
 """
 
 import math
@@ -68,12 +70,13 @@ def backtest(strategy, market, start=None, end=None, n=config.MAX_SUBNETS, facto
         times = times[times >= pd.Timestamp(start, tz="UTC")]
     if end is not None:
         times = times[times <= pd.Timestamp(end, tz="UTC")]
-    step = max(1, round(config.ROUND_MINUTES / market.bar_minutes))
-    halt = math.ceil(config.HALT_MINUTES / market.bar_minutes)
+    halt = max(1, math.ceil(config.HALT_MINUTES / market.bar_minutes))
+    hold = max(1, math.ceil(config.HOLD_MINUTES / market.bar_minutes))
+    step = halt + hold  # the next deadline is when the round's result comes in
 
     account, rows = Account(factor, fee_rate), []
-    for i in range(0, len(times) - halt - step, step):
-        deadline, trade_at, end_at = times[i], times[i + halt], times[i + halt + step]
+    for i in range(0, len(times) - step, step):
+        deadline, trade_at, end_at = times[i], times[i + halt], times[i + step]
         universe = market.universe(deadline)
         try:
             weights, valid = make_weights(strategy, market, deadline, universe, n), True

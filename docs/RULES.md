@@ -9,10 +9,12 @@ validator.
 | Time | What happens |
 |---|---|
 | t | Deadline: your miner's latest weights before t count |
-| t → t+5 | Pause: nothing changes |
+| t → t+5 | Pause: your account is frozen |
 | t+5 | Your portfolio moves to the new weights at that moment's prices, and the fee is charged |
-| t+5 → t+20 | Your gain or loss follows the real subnet prices |
-| t+15 | Next deadline, whose weights apply from t+20: rounds follow each other without a gap |
+| t+5 → t+15 | Live: your gain or loss follows the real subnet prices |
+| t+15 | The round's result, and the next round's deadline |
+
+Rounds follow each other: a round is settled before the next one starts.
 
 If your miner sends nothing before a deadline, your portfolio keeps its weights and
 you pay no fee.
@@ -40,7 +42,7 @@ the new ones. Selling one subnet and buying another trades twice.
 fee = 0.25% × (sum of |new weight − old weight| over all subnets) × V
 ```
 
-**The gain**, from t+5 to t+20, on the value left after the fee, with r = each
+**The gain**, from t+5 to t+15, on the value left after the fee, with r = each
 subnet's price change and m = the average price change of the 50 subnets:
 
 ```
@@ -83,19 +85,24 @@ The same numbers are checked in `tests/test_scoring.py`.
 Both were measured on the February 2026 history, with `scripts/calibrate.py`.
 The reference strategy buys the 10 subnets that rose most over the last hour:
 
-- **20:** in a typical round, that strategy ends about 0.045% above or below the
-  market. Multiplied by 20, a typical round moves an account by about 1%, so good and
-  bad choices show.
-- **0.25%:** before fees, random picks earn nothing. At 0.25%, they lose through fees
-  about as much as the reference strategy gains after fees. Trading pays only when it
+- **20:** in a typical round, that strategy ends about 0.043% above or below the
+  market. Multiplied by 20, a typical round moves an account by roughly 1%, so good
+  and bad choices show.
+- **0.25%:** before fees, random picks earn nothing. At about 0.25%, they lose through
+  fees as much as the reference strategy gains after fees. Trading pays only when it
   is based on a real signal.
+
+These were measured on 15-minute moves, the resolution of the history. At the event,
+the live part of a round lasts 10 minutes, so moves will be a little smaller. Both
+numbers should be checked again on 5-minute data.
 
 ## Backtests versus the live event
 
-The provided history has one snapshot every 15 minutes, so in backtests the 5-minute
-pause is rounded up to 15 minutes: weights decided at a snapshot are traded at the
-next one. In the practice game (`scripts/practice.py`) and at the event, the pause is
-exactly 5 minutes.
+The provided history has one snapshot every 15 minutes, so backtests round the pause
+and the live part up to one snapshot each: a backtest round lasts 30 minutes (15 of
+pause, 15 live). With 5-minute data, backtests match the event exactly. In the practice
+game (`scripts/practice.py`) and at the event, a round is 5 minutes of pause and 10
+live.
 
 ## For organisers
 
@@ -108,11 +115,11 @@ The validator reference is `Leaderboard` in `subnet_trading/scoring.py`:
    1,000 TAO.
 2. Before each deadline, `submit(miner, weights, universe)` records each miner's latest
    valid weights. The universe is the 50 largest pools at the deadline.
-3. At t+20, `run_round(returns, universe)` charges the fees and applies the returns
-   from t+5 to t+20.
+3. At t+15, `run_round(returns, universe)` charges the fees and applies the returns
+   from t+5 to t+15. Then the next round's weights are submitted.
 4. `standings()` gives the ranking, and `weights()` the weights to set on chain.
 
-The validator needs the price of every subnet at t+5 and t+20, and the TAO in every
+The validator needs the price of every subnet at t+5 and t+15, and the TAO in every
 pool at t. Bittensor limits how often a validator can set weights: on the testnet
 subnet, allow it every 75 blocks (15 minutes) to set them after every round, or set
 them every other round.

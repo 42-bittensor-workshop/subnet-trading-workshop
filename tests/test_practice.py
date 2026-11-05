@@ -65,9 +65,11 @@ def test_the_chain_is_read_at_each_deadline_and_five_minutes_later():
     practice, chain = session(lambda market: {1: 1.0})
     practice.play(rounds=2)
     at = lambda h, m: datetime(2026, 11, 20, h, m, tzinfo=timezone.utc)  # noqa: E731
-    # deadlines 10:15 and 10:30, trades 10:20 and 10:35, the last round settled at 10:50
-    assert chain.reads == [at(10, 15), at(10, 20), at(10, 30), at(10, 35), at(10, 50)]
+    # round 1: deadline 10:15, trade 10:20, result 10:30 (also round 2's deadline);
+    # round 2: trade 10:35, result 10:45. A round is settled before the next one starts.
+    assert chain.reads == [at(10, 15), at(10, 20), at(10, 30), at(10, 35), at(10, 45)]
     assert len(practice.rounds) == 2
+    assert [r["status"] for r in practice.timeline] == ["settled", "settled"]
 
 
 def test_accounts_follow_the_scoring_rules():
@@ -75,7 +77,7 @@ def test_accounts_follow_the_scoring_rules():
     practice.play(rounds=2)
     universe = list(range(1, 51))
     expected = Account()
-    for start, end in ((19, 34), (34, 49)):     # minutes after START: 10:20-10:35, then 10:35-10:50
+    for start, end in ((19, 29), (34, 44)):     # minutes after START: 10:20-10:30, then 10:35-10:45
         returns = returns_between(start, end)
         expected.trade({1: 1.0})                 # a fee only the first time
         expected.hold(returns, market_return(returns, universe))
@@ -121,6 +123,7 @@ def test_dashboard_is_written(tmp_path):
     practice.play(rounds=1)
     page = practice.dashboard.read_text()
     assert "Practice game" in page and "simple strategy" in page and "TAO" in page
+    assert "your result" in page and "Round 1" in page
 
 
 def test_strategy_file_is_read_again_at_each_deadline(tmp_path):
@@ -167,3 +170,18 @@ def test_practice_command_line():
         cli.parse([])                                                      # one of the two is required
     with pytest.raises(SystemExit):
         cli.parse(["--strategy", "strategies/example_strategy.py", "--weights", "strategies/my_weights.json"])
+
+
+def test_a_round_goes_from_pause_to_live_to_settled():
+    practice, chain = session(lambda market: {1: 1.0})
+    t = datetime(2026, 11, 20, 10, 15, tzinfo=timezone.utc)
+    chain.clock.now = t
+    practice.deadline(t)
+    assert practice.timeline[-1]["status"] == "pause"
+    chain.clock.now = t + timedelta(minutes=5)
+    practice.trade(chain.clock.now)
+    assert practice.timeline[-1]["status"] == "live"
+    chain.clock.now = t + timedelta(minutes=15)
+    practice.deadline(chain.clock.now)                  # settles round 1, then opens round 2
+    assert [r["status"] for r in practice.timeline] == ["settled", "pause"]
+    assert practice.timeline[0]["you"] != 0

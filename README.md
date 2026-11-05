@@ -9,7 +9,8 @@ live against everyone else.
 - You start with **1,000 TAO** (virtual money).
 - Every **15 minutes**, your miner sends a list of **up to 10 subnets with weights**,
   for example `{64: 0.5, 4: 0.3, 51: 0.2}`.
-- After a **5-minute pause**, your TAO is placed that way for the next 15 minutes.
+- After a **5-minute pause**, your TAO is placed that way for 10 minutes. Then the
+  round's result comes in, and the next round starts.
 - You **gain** when your subnets do better than the average subnet, and **lose** when
   they do worse. Every trade costs a small **fee**.
 - Only the **50 subnets with the most TAO in their pool** can be picked.

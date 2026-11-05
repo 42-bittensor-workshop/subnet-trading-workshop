@@ -63,7 +63,12 @@ def next_deadline(now):
 
 
 class Practice:
-    """One practice session. `chain` provides snapshots (live.Chain, or a fake in tests)."""
+    """One practice session. `chain` provides snapshots (live.Chain, or a fake in tests).
+
+    Rounds follow each other: at each deadline the round in progress is settled, then
+    everyone's weights for the next round are taken; they are traded 5 minutes later and
+    held until the next deadline.
+    """
 
     def __init__(self, strategy, chain, history, dashboard=None, clock=None, sleep=time.sleep, log=print):
         self.strategy, self.chain, self.history = strategy, chain, history
@@ -72,16 +77,21 @@ class Practice:
         self.board = Leaderboard()
         self.board.accounts = {YOU: Account(), SIMPLE: Account()}
         self.values = {YOU: [], SIMPLE: [], MARKET: []}
-        self.rounds = []
-        self.last_trade, self.last_universe, self.sent = None, None, {}
+        self.rounds = []      # one row per settled round, for the standings
+        self.timeline = []    # every round: its times, its status and your result
+        self.open = None      # the round in progress
+        self.sent = {}
 
     def wait_until(self, moment):
         while (left := (moment - self.clock()).total_seconds()) > 0:
             self.sleep(min(left, 30))
 
     def deadline(self, t):
-        """At the deadline: a fresh snapshot, then everyone's weights."""
-        self.history.add(self.chain.snapshot())
+        """At a deadline: settle the round in progress, then take everyone's weights."""
+        snap = self.chain.snapshot()
+        self.history.add(snap)
+        if self.open is not None and self.open.get("trade") is not None:
+            self.settle(t, snap)
         market = self.history.market()
         universe = market.universe()
         weights = {}
@@ -97,32 +107,37 @@ class Practice:
                 if name == YOU:
                     self.log(f"{t:%H:%M} your strategy failed, your portfolio stays as it was: "
                              f"{type(error).__name__}: {error}")
+            if weights[name] is not None:
+                self.board.submit(name, weights[name], universe)
         self.sent = weights
+        number = len(self.timeline) + 1
+        trade_at = t + timedelta(minutes=config.HALT_MINUTES)
+        result_at = t + timedelta(minutes=config.ROUND_MINUTES)
+        self.open = {"number": number, "universe": universe, "trade": None}
+        self.timeline.append({"round": number, "deadline": t, "trade": trade_at, "result": result_at,
+                              "status": "pause", "you": None})
         if weights[YOU] is not None:
             shown = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(weights[YOU].items()))
-            self.log(f"{t:%H:%M} deadline: your weights {{{shown}}}")
+            self.log(f"{t:%H:%M} round {number}: your weights {{{shown}}}; "
+                     f"traded at {trade_at:%H:%M}, result at {result_at:%H:%M}")
         return universe
 
-    def trade(self, t, universe):
-        """Five minutes later: settle the previous round, then trade the new weights."""
-        snap = self.chain.snapshot()
-        if self.last_trade is not None:
-            before, now = self.last_trade["pools"], snap["pools"]
-            returns = (now["price"] / before["price"] - 1).where(now["alpha_out"] >= 0.5 * before["alpha_out"])
-            self.board.run_round(returns.dropna().to_dict(), self.last_universe)
-            self.record(t)
-        for name, weights in self.sent.items():
-            if weights is not None:
-                self.board.submit(name, weights, universe)
-        self.last_trade, self.last_universe = snap, universe
+    def trade(self, t):
+        """Five minutes after the deadline: the round's prices start to count."""
+        self.open["trade"] = self.chain.snapshot()
+        self.timeline[-1]["status"] = "live"
+        self.log(f"{t:%H:%M} round {self.open['number']}: traded, live until "
+                 f"{self.timeline[-1]['result']:%H:%M}")
 
-    def settle_last(self):
-        """Settle the round still running, without taking new weights."""
-        t = next_deadline(self.clock()) + timedelta(minutes=config.HALT_MINUTES)
-        self.write_dashboard(t)
-        self.wait_until(t)
-        self.sent = {}
-        self.trade(t, self.last_universe)
+    def settle(self, t, snap):
+        """The round's result: returns from its trade to now, with the event's scoring code."""
+        before, now = self.open["trade"]["pools"], snap["pools"]
+        returns = (now["price"] / before["price"] - 1).where(now["alpha_out"] >= 0.5 * before["alpha_out"])
+        start = self.board.accounts[YOU].value
+        self.board.run_round(returns.dropna().to_dict(), self.open["universe"])
+        self.timeline[-1].update(status="settled", you=self.board.accounts[YOU].value - start)
+        self.record(t)
+        self.open = None
 
     def record(self, t):
         values = {name: self.board.accounts[name].value for name in (YOU, SIMPLE)}
@@ -130,23 +145,29 @@ class Practice:
         for name, value in values.items():
             self.values[name].append((t, value))
         self.rounds.append({"settled": t, **values})
-        self.log(f"{t:%H:%M} round settled: you {values[YOU]:,.1f} TAO, "
-                 f"simple strategy {values[SIMPLE]:,.1f}, market {values[MARKET]:,.0f}")
+        self.log(f"{t:%H:%M} round {self.timeline[-1]['round']} result: you {values[YOU]:,.1f} TAO "
+                 f"({self.timeline[-1]['you']:+.1f}), simple strategy {values[SIMPLE]:,.1f}, "
+                 f"market {values[MARKET]:,.0f}")
 
     def play(self, rounds=None):
-        """Run deadline after deadline; `rounds` = number of deadlines (None: until stopped)."""
+        """Play `rounds` rounds (None: until stopped). The last one is settled at the next deadline."""
         done = 0
         while rounds is None or done < rounds:
             t = next_deadline(self.clock())
             self.write_dashboard(t)
             self.wait_until(t)
-            universe = self.deadline(t)
-            self.write_dashboard(t + timedelta(minutes=config.HALT_MINUTES))
-            self.wait_until(t + timedelta(minutes=config.HALT_MINUTES))
-            self.trade(t + timedelta(minutes=config.HALT_MINUTES), universe)
+            self.deadline(t)
+            trade_at = t + timedelta(minutes=config.HALT_MINUTES)
+            self.write_dashboard(trade_at)
+            self.wait_until(trade_at)
+            self.trade(trade_at)
             done += 1
-        if self.last_trade is not None:
-            self.settle_last()
+        t = next_deadline(self.clock())
+        self.write_dashboard(t)
+        self.wait_until(t)
+        snap = self.chain.snapshot()
+        self.history.add(snap)
+        self.settle(t, snap)
         self.write_dashboard(None)
 
     def write_dashboard(self, next_event):
