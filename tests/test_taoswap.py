@@ -3,11 +3,13 @@ import json
 import urllib.error
 import urllib.parse
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
 from subnet_trading import config
 from subnet_trading.data import HISTORY_5MIN_FILE, load
+from subnet_trading.plots import plot_candles
 from subnet_trading.taoswap import Taoswap, TaoswapError, backfill_snapshots, history_rows, holder_rows
 
 DAY = 86400
@@ -128,6 +130,34 @@ def test_backfill_snapshots_use_candle_prices_and_todays_pools():
     last = snapshots[-1]["pools"]
     assert last.loc[64, "price"] == pytest.approx(close(T0 + 2 * 3600 - 300))
     assert last.loc[8, "tao_in"] == 400.0
+
+
+def ohlc(count, start="2026-11-04 00:00"):
+    closes = pd.Series([1 + ((-1) ** k) * k / 1000 for k in range(count)])
+    opens = closes.shift(1).fillna(1.0)
+    return pd.DataFrame({"time": pd.date_range(start, periods=count, freq="5min", tz="UTC"), "open": opens,
+                         "high": pd.concat([opens, closes], axis=1).max(axis=1) + 0.002,
+                         "low": pd.concat([opens, closes], axis=1).min(axis=1) - 0.002, "close": closes,
+                         "volume": 3.0})
+
+
+@pytest.mark.parametrize("count", [1, 60, 2000])   # one candle, candlesticks, a long history as a line
+def test_candle_charts_are_drawn(count, tmp_path):
+    plt.switch_backend("Agg")
+    fig = plot_candles(ohlc(count))
+    fig.savefig(tmp_path / "chart.png")
+    plt.close(fig)
+    assert len(fig.axes) == 2 and (tmp_path / "chart.png").stat().st_size > 0
+
+
+def test_a_tenfold_move_gets_a_log_scale():
+    plt.switch_backend("Agg")
+    spiky = ohlc(60)
+    spiky.loc[0, "high"] = 50.0
+    for candles, scale in ((ohlc(60), "linear"), (spiky, "log")):
+        fig = plot_candles(candles)
+        assert fig.axes[0].get_yscale() == scale
+        plt.close(fig)
 
 
 @pytest.mark.skipif(not HISTORY_5MIN_FILE.exists(), reason="data/history_5min.csv.gz not fetched yet")
